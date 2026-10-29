@@ -9,6 +9,28 @@
     const a=rad(slope),c=Math.cos(a),s=Math.sin(a);
     return {x:x*c+z*s,z:-x*s+z*c};
   }
+  // Dezelfde vorkomtrek als in de SVG, inclusief de onderkant van de hiel.
+  function forkGeometry(s) {
+    const a=rad(s.tilt),c=Math.cos(a),sn=Math.sin(a),depth=s.center/1000*2;
+    const outline=[[-.03,.05],[-.03,-.95],[.02,-.95],[.02,0],[depth+.17,0],[depth+.09,.04]];
+    const requested=s.height/1000-.10;
+    const lift=Math.max(requested,...outline.map(([x,y])=>(x*sn+y*c-.10)/c));
+    const points=outline.map(([x,y])=>({x:.35+x*c+(lift-y)*sn,z:.10+(lift-y)*c-x*sn}));
+    return {lift,depth,points,raised:lift>requested+1e-9};
+  }
+  function forwardTip(s,r) {
+    const requested=r.status==='tip'&&r.edge==='voor'?Math.min(9,2+Math.abs(r.margin)*20):0;
+    const {points}=forkGeometry(s),axleHeight=.32;
+    // De voorwielen blijven op de vloer; het chassis draait om de vooras.
+    const clearance=angle=>Math.min(...points.map(p=>axleHeight-p.x*Math.sin(rad(angle))+(p.z-axleHeight)*Math.cos(rad(angle))));
+    let angle=requested;
+    if(clearance(angle)<0) {
+      let lo=0,hi=angle;
+      for(let i=0;i<45;i++){const mid=(lo+hi)/2;if(clearance(mid)>=0)lo=mid;else hi=mid;}
+      angle=lo;
+    }
+    return {angle,requested,grounded:angle<requested-1e-7,clearance:clearance(angle)};
+  }
   function heightFactor(h) {
     if(h<=1500) return 1;
     if(h<=3000) return 1-(h-1500)/1500*0.15;
@@ -16,7 +38,7 @@
   }
   function capacity(center,height) { return Math.min(truck.rated,truck.rated*0.85/(truck.overhang+center/1000)*heightFactor(height)); }
   function compute(s) {
-    const a=rad(s.tilt), h=s.height/1000-0.10+0.45, d=s.center/1000;
+    const a=rad(s.tilt), h=forkGeometry(s).lift+0.45, d=s.center/1000;
     const lx=truck.overhang+d*Math.cos(a)+h*Math.sin(a);
     const lz=0.10+h*Math.cos(a)-d*Math.sin(a);
     const mass=truck.mass+s.weight;
@@ -37,7 +59,7 @@
     const status=margin<=0?'tip':utilization>1.00001?'capacity':margin<0.12||utilization>=0.9?'near':'stable';
     return {lx,lz,x,y,z,px,py,mass,margin,front,edge,max,utilization,status,loadMoment:s.weight*9.81*lx,truckMoment:truck.mass*9.81*-truck.x,ax,ay};
   }
-  const api={truck,defaults,compute,capacity,heightFactor,floorToWorld};
+  const api={truck,defaults,compute,capacity,heightFactor,floorToWorld,forkGeometry,forwardTip};
   root.BalansModel=api;
   if(typeof module!=='undefined') module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

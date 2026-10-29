@@ -22,6 +22,10 @@ Standaardtekst is groter en vet; de knop Groepsscherm vergroot de lesweergave ve
 
 Bij een langshelling draaien de vloer, heftruck en geometrische meetlijnen samen. De labels blijven horizontaal leesbaar. De zwaartekrachtprojectie blijft bij stilstand verticaal in het wereldbeeld. Positieve waarden betekenen dat de lastzijde neerwaarts staat; negatieve waarden betekenen opwaarts. Het bovenaanzicht verwijst voor de hellingshoek naar het zijaanzicht.
 
+Het label van het gezamenlijke zwaartepunt staat boven de heftruck met een doorlopende verwijslijn. De illustratieve vooroverbeweging draait om de vooras en stopt zodra de vork de vloer raakt. Dat neemt het berekende kantelmoment niet weg. Bij lage vorken en mastneiging wordt de minimumhoogte door vloercontact begrensd; zowel de tekening als de massaposities gebruiken dezelfde geometrie.
+
+Op telefoons blijft de compacte figuur zichtbaar boven de bediening. Een keuzelijst toont één van de negen instellingen tegelijk, direct bij de afbeelding. Legenda en toelichting staan daaronder. Bij oefeningen wordt de relevante instelling geselecteerd; vastgezette instellingen zijn ook in de keuzelijst uitgeschakeld.
+
 Het ongewijzigde logo van Deltalinqs Training & Services is afkomstig van de officiële website: https://www.deltalinqstraining.nl/templates/standaard/images/logo.png .
 
 ## Lastdiagrammen

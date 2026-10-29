@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {compute,defaults,capacity,floorToWorld}=require('./dist/model.js');
+const {compute,defaults,capacity,floorToWorld,forkGeometry,forwardTip}=require('./dist/model.js');
 const base=compute(defaults), heavy=compute({...defaults,weight:2000}), long=compute({...defaults,center:1000});
 assert.equal(base.status,'stable');
 assert(heavy.x>base.x,'Meer massa verplaatst het zwaartepunt naar de last');
@@ -33,6 +33,22 @@ assert.equal(compute({...defaults,weight:1800,center:900}).status,'tip');
 assert(compute({...defaults,weight:1800,center:550}).utilization<=1);
 const final=compute({...defaults,weight:1800,center:300,height:200,tilt:0,speed:4,brake:0.2,radius:2.5,offset:0});
 assert(final.margin>=.15&&final.utilization<=1,'De gecombineerde oefening heeft een haalbare oplossing');
+// Botsingsgrens: ook bij een lage vork, lange last, mastneiging en helling.
+let floorContacts=0;
+for(const height of [100,200,500,1500,4500])for(const center of [300,500,1025,1200])for(const tilt of [-6,0,6])for(const slope of [-8,0,7,8]){
+ const s={...defaults,weight:3000,brake:4,height,center,tilt,slope};
+ const fork=forkGeometry(s),pose=forwardTip(s,compute(s)),a=pose.angle*Math.PI/180;
+ assert(pose.angle>=0&&pose.angle<=pose.requested,'De contactgrens kan de kanteling alleen verkleinen');
+ assert(fork.points.every(p=>p.z>=-1e-12),'Ook vóór kantelen blijft de hele vork boven de vloer');
+ for(const p of fork.points){
+  const x=p.x*Math.cos(a)+(p.z-.32)*Math.sin(a),z=.32-p.x*Math.sin(a)+(p.z-.32)*Math.cos(a);
+  assert(z>=-1e-10,'De vork mag tijdens kantelen niet door de vloer gaan');
+  const point=floorToWorld(x,z,slope),onFloor=floorToWorld(x,0,slope);
+  assert((point.z-onFloor.z)*Math.cos(slope*Math.PI/180)>=-1e-10,'Vloercontact blijft correct op een helling');
+ }
+ if(pose.grounded){floorContacts++;assert(Math.abs(pose.clearance)<1e-9,'De vork stopt precies bij eerste vloercontact');}
+}
+assert(floorContacts>0,'Er worden werkelijk situaties met vloercontact getest');
 for(const weight of [0,1500,3000])for(const height of [100,4500])for(const center of [300,1200])for(const tilt of [-6,6])for(const speed of [0,15]){
  const r=compute({...defaults,weight,height,center,tilt,speed,brake:4,slope:8,offset:350,radius:1.5});
  for(const [k,v] of Object.entries(r))if(typeof v==='number')assert(Number.isFinite(v),k+' moet eindig zijn');

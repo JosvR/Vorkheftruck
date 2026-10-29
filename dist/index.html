@@ -24,14 +24,16 @@
     <div id="exerciseBanner" class="exercise-banner" hidden></div>
     <div class="workgrid">
       <section class="visualpanel panel">
-        <div class="panelhead"><div><h3>De heftruck in balans</h3><p id="viewCaption">Zijaanzicht · kantelen over de voorwielen</p></div><div class="segmented" aria-label="Kies aanzicht"><button class="selected" id="sideView" aria-pressed="true">Zijaanzicht</button><button id="topView" aria-pressed="false">Bovenaanzicht</button></div></div>
-        <button class="textbutton enlarge-scene" id="enlargeTruck">Vergroot figuur ↗</button>
+        <div class="panelhead"><div><h3>De heftruck in balans</h3><p id="viewCaption">Zijaanzicht · kantelen over de voorwielen</p></div><div class="segmented" aria-label="Kies aanzicht"><button class="selected" id="sideView" aria-pressed="true">Zijaanzicht</button><button id="topView" aria-pressed="false">Bovenaanzicht</button></div><button class="textbutton enlarge-scene" id="enlargeTruck">Vergroot figuur ↗</button></div>
         <div class="scene-wrap"><svg id="scene" viewBox="0 0 860 490" role="img" aria-label="Interactieve heftruck met last, gezamenlijk zwaartepunt en vaste kantellijn"></svg><div class="scenehint" id="sceneHint">Sleep aan een schuif en kijk wat er verandert</div><div class="scenestatus" id="sceneStatus"><i></i><span>Marge <b>293 mm</b></span></div></div>
+      </section>
+      <section class="scene-details panel" aria-label="Toelichting bij de figuur">
         <div class="legend"><span><i class="dot orange"></i> Lastzwaartepunt</span><span><i class="dot teal"></i> Gezamenlijk zwaartepunt</span><span><i class="dot red"></i> Kantellijn</span><span><i class="dot purple"></i> Krachtprojectie</span></div>
         <div class="rear-note"><b>Compact contragewicht · achterwielbesturing</b><p>De achterwielen sturen. De achterkant zwaait bij een bocht uit: houd daarvoor ruimte vrij.</p></div>
         <div class="insight"><span aria-hidden="true">↳</span><p id="liveInsight">Meer gewicht trekt het gezamenlijke zwaartepunt naar de last toe. De kantellijn bij de voorwielen blijft op dezelfde plek.</p></div>
       </section>
       <aside class="controlpanel panel"><div class="panelhead"><div><h3>Verander de situatie</h3><p>Één factor tegelijk maakt het verschil zichtbaar.</p></div><span class="controlglyph" aria-hidden="true">☷</span></div>
+        <label class="mobile-setting" for="mobileSetting">Kies een instelling<select id="mobileSetting"></select></label>
         <div class="controltabs"><button class="selected" data-control="load">Last & mast</button><button data-control="motion">Rijden & ondergrond</button></div>
         <div id="loadControls" class="controlset"></div><div id="motionControls" class="controlset" hidden></div>
         <div class="presets"><span class="eyebrow">SNEL EEN SITUATIE PROBEREN</span><div><button data-preset="standard">Standaard pallet</button><button data-preset="long">Lange last</button><button data-preset="high">Hoog & remmen</button><button data-preset="turn">Te snel de bocht in</button></div></div>

@@ -6,7 +6,7 @@
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   const C={teal:'#248577',orange:'#e69043',purple:'#7962b8',red:'#c74738',ink:'#28473d',soft:'#9da98f'};
   let state={...M.defaults}, result=M.compute(state), view='side', tab='lab', activeExercise=null, feedback='', feedbackOK=false, selectedFactor=null;
-  let completed=[];
+  let completed=[],mobileKey='weight';
   try { const saved=JSON.parse(localStorage.getItem('balanslab-progress-v1')||'[]'); if(Array.isArray(saved)) completed=[...new Set(saved.filter(x=>Number.isInteger(x)&&x>=0&&x<7))]; } catch(e) {}
   const controls=[
     {key:'weight',name:'Lastgewicht',unit:'kg',min:0,max:3000,step:50,start:'0 kg',end:'3.000 kg',help:'Het gewicht van de lading, inclusief pallet.',group:'load'},
@@ -43,8 +43,10 @@
   const presets={standard:{...M.defaults},long:{...M.defaults,weight:1800,center:1000},high:{...M.defaults,weight:1500,height:4000,brake:3},turn:{...M.defaults,weight:1200,height:3000,speed:12,radius:3}};
 
   function buildControls() {
+    $('mobileSetting').innerHTML=controls.map(c=>`<option value="${c.key}">${c.name}</option>`).join('');
+    $('mobileSetting').addEventListener('change',e=>{mobileKey=e.target.value;showControls(controls.find(c=>c.key===mobileKey).group);});
     for(const group of ['load','motion']) {
-      $(group+'Controls').innerHTML=controls.filter(c=>c.group===group).map(c=>`<div class="control" data-key="${c.key}"><div class="controlhead"><label for="range-${c.key}">${c.name}<button type="button" data-info="${c.key}" aria-label="Uitleg over ${c.name}">ⓘ</button></label><span class="numberwrap"><input id="number-${c.key}" type="number" min="${c.min}" max="${c.max}" step="${c.step}" value="${state[c.key]}" aria-label="${c.name} invoeren"><small>${c.unit}</small></span></div><input id="range-${c.key}" type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${state[c.key]}" aria-label="${c.name}"><div class="rangecaption"><span>${c.start}</span><span>${c.end}</span></div><p class="controlhelp">${c.help}</p></div>`).join('');
+      $(group+'Controls').innerHTML=controls.filter(c=>c.group===group).map(c=>`<div class="control" data-key="${c.key}"><div class="controlhead"><label for="range-${c.key}">${c.name}<button type="button" data-info="${c.key}" aria-label="Uitleg over ${c.name}">ⓘ</button></label><span class="numberwrap"><input id="number-${c.key}" type="number" min="${c.min}" max="${c.max}" step="${c.step}" value="${state[c.key]}" aria-label="${c.name} invoeren"><small>${c.unit}</small></span></div><input id="range-${c.key}" type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${state[c.key]}" aria-label="${c.name}"><div class="rangecaption"><span>${c.start}</span><span>${c.end}</span></div><p class="controlhelp" id="help-${c.key}">${c.help}</p></div>`).join('');
     }
     for(const c of controls) {
       $('range-'+c.key).addEventListener('input',e=>setControl(c,Number(e.target.value)));
@@ -73,7 +75,11 @@
       r.setAttribute('aria-valuetext',fmt(state[c.key],c.step<1?1:0)+' '+c.unit);
       r.style.setProperty('--range',((state[c.key]-c.min)/(c.max-c.min)*100)+'%');
       n.title=locked?'Deze instelling blijft gelijk tijdens deze opdracht':'';
+      $('mobileSetting').querySelector(`option[value="${c.key}"]`).disabled=locked;
     }
+    if($('range-'+mobileKey).disabled)mobileKey=controls.find(c=>!$('range-'+c.key).disabled).key;
+    showControls(controls.find(c=>c.key===mobileKey).group);
+    $('help-height').textContent=M.forkGeometry(state).raised?'De vork rust op de vloer. De maststand en vorklengte begrenzen de minimumhoogte.':controls.find(c=>c.key==='height').help;
     document.querySelectorAll('[data-preset]').forEach(b=>b.disabled=activeExercise!==null);
   }
   function showTab(next) {
@@ -83,6 +89,9 @@
     if(next==='practice') renderPractice();
   }
   function showControls(group) {
+    if(controls.find(c=>c.key===mobileKey).group!==group)mobileKey=controls.find(c=>c.group===group&&!$('range-'+c.key).disabled)?.key||controls.find(c=>c.group===group).key;
+    $('mobileSetting').value=mobileKey;
+    document.querySelectorAll('.control').forEach(c=>c.classList.toggle('mobile-active',c.dataset.key===mobileKey));
     $('loadControls').hidden=group!=='load';$('motionControls').hidden=group!=='motion';
     document.querySelectorAll('[data-control]').forEach(b=>{b.classList.toggle('selected',b.dataset.control===group);b.setAttribute('aria-pressed',String(b.dataset.control===group));});
   }
@@ -94,14 +103,14 @@
   }
   function drawScene() {
     if(view==='top') return drawTopScene();
-    const r=result,s=state,S=Math.min(124,345/(Math.max(2.45,s.height/1000+1.03))),ox=440,gy=386;
+    const r=result,s=state,fork=M.forkGeometry(s),pose=M.forwardTip(s,r),S=Math.min(124,310/(Math.max(2.45,fork.lift+1.13))),ox=440,gy=386;
     const xp=x=>ox+x*S,yp=z=>gy-z*S;
-    const loadH=s.height/1000-0.10,depth=s.center/1000*2,mastH=Math.max(2.45,loadH+1.03);
-    const tip=r.status==='tip'&&r.edge==='voor'?Math.min(9,2+Math.abs(r.margin)*20):0;
+    const loadH=fork.lift,depth=fork.depth,mastH=Math.max(2.45,loadH+1.03);
+    const tip=pose.angle,tipping=pose.requested>0;
     const lx=xp(r.lx),ly=yp(r.lz),cx=xp(r.x),cy=yp(r.z),px=xp(r.px);
     const dimY=435;
     const plane=(x,y)=>{const p=M.floorToWorld((x-ox)/S,(gy-y)/S,s.slope);return {x:ox+p.x*S,y:gy-p.z*S};};
-    const cgScreen=plane(cx,cy),labelY=Math.max(94,cgScreen.y-72),counterAnchor=plane(xp(-2.0),yp(.99));
+    const cgScreen=plane(cx,cy),labelY=30,labelX=clamp(cgScreen.x,270,560),counterAnchor=plane(xp(-2.0),yp(.99));
     const planeBadge=(x,y,text,color,width)=>{const p=plane(x,y);return badge(p.x,clamp(p.y,35,468),text,color,width);};
     const slopeText=(s.slope>0?'+':'')+fmt(s.slope)+'° · '+(s.slope>0?'neerwaarts':s.slope<0?'opwaarts':'vlak');
     $('scene').innerHTML=`<defs>
@@ -118,7 +127,7 @@
     <g id="inclined-world" transform="rotate(${s.slope} ${ox} ${gy})" data-slope="${s.slope}">
     <rect x="-200" y="386" width="1260" height="400" fill="#e9eee2"/><rect x="-200" y="386" width="1260" height="400" fill="url(#floor)"/><path id="floor-edge" d="M-200 386H1060" stroke="#879e73" stroke-width="2"/>
     <ellipse cx="${ox-25}" cy="393" rx="${2.9*S}" ry="10" fill="#607450" opacity=".09"/>
-    <g transform="rotate(${tip},${ox},${gy})"><g transform="translate(${ox} ${gy}) scale(${S})">
+    <g id="tipping-truck" transform="rotate(${tip},${ox},${yp(.32)})" data-tip-angle="${tip}" data-floor-contact="${pose.grounded}"><g transform="translate(${ox} ${gy}) scale(${S})">
       <g id="truck-body" aria-label="Compacte heftruck met zichtbaar contragewicht en korte achteroverhang">
       <path d="M-2.13-.30v-.58q0-.20.16-.22l.73-.02q.20 0 .25.16l.05.66Z" fill="url(#counter)" stroke="#354b36" stroke-width=".018"/>
       <path d="M-2.10-.91q.02-.12.14-.13h.67l.10.10Z" fill="#829074"/>
@@ -150,7 +159,7 @@
         ${Array.from({length:Math.floor(mastH*5)},(_,i)=>`<path d="M-.03 ${-.2-i*.2}h.1" stroke="#687663" stroke-width=".02"/>`).join('')}
         <path d="M-.06 ${-mastH+.06}h.2" stroke="#2b402d" stroke-width=".09" stroke-linecap="round"/>
         <path d="M-.08 -.45L-.33 -1.1" stroke="#6d7869" stroke-width=".055"/><path d="M-.08 -.45L-.23 -.84" stroke="#b5baab" stroke-width=".032"/>
-        <g transform="translate(0 ${-loadH})"><path d="M-.03 .05V-.95H.02V0H${depth+.17}l-.08.04H-.03Z" fill="#596a57"/>
+        <g transform="translate(0 ${-loadH})"><path id="fork-outline" d="M-.03 .05V-.95H.02V0H${depth+.17}l-.08.04H-.03Z" fill="#596a57"/>
           <path d="M0 0H${depth}v-.1H0Z" fill="#a1804b"/>
           <path d="M0-.02h.15v.045H0Zm${depth-.15} 0h.15v.025h-.15Z" fill="#8a6e43"/>
           ${s.weight>0?`<rect x="0" y="-.8" width="${depth}" height=".7" rx=".015" fill="url(#box)" stroke="#ad874f" stroke-width=".015"/>
@@ -170,14 +179,14 @@
     <path d="M${ox-5} ${gy+24}l5-8 5 8Z" fill="${C.red}"/>
     <path d="M${xp(.35)} ${dimY-13}V${dimY+7}M${lx} ${dimY-13}V${dimY+7}M${xp(.35)+3} ${dimY}H${lx-3}" stroke="#a7b297" stroke-width="1" marker-start="url(#dimArrow)" marker-end="url(#dimArrow)"/>
     </g>
-    <path d="M${cgScreen.x} ${labelY+17}V${cgScreen.y-10}" stroke="${C.teal}" stroke-width="1.4" class="cgline"/>
-    ${badge(cgScreen.x,labelY,'Gezamenlijk zwaartepunt',C.teal,235)}
+    <path d="M${labelX} ${labelY+17}L${cgScreen.x} ${cgScreen.y-10}" stroke="${C.teal}" stroke-width="1.4" class="cgline"/>
+    <g id="cg-label">${badge(labelX,labelY,'Gezamenlijk zwaartepunt',C.teal,235)}</g>
     <path d="M${counterAnchor.x} ${counterAnchor.y}L175 230H90" fill="none" stroke="#526b44" stroke-width="1.5"/>${badge(120,211,'Contragewicht','#425e35',180)}
     ${planeBadge(ox-115,gy+32,'Vaste kantellijn',C.red,190)}
     ${planeBadge((xp(.35)+lx)/2,dimY+23,'LZP '+fmt(s.center)+' mm','#465f3c',190)}
     ${s.slope!==0?'<path id="horizontal-reference" d="M695 386H835" stroke="#7b8d70" stroke-width="1.5" stroke-dasharray="6 5"/><text x="835" y="375" text-anchor="end" font-size="14" fill="#536b47">0° horizontaal</text>':''}
     <text x="27" y="472" font-size="14" fill="#526b45">${s.slope!==0?'Langshelling '+slopeText:s.height>1800?'Aanzicht schaalt mee met de hefhoogte':'Modelheftruck · 3.200 kg'}</text>
-    ${tip?`<rect x="22" y="57" width="165" height="25" rx="5" fill="#fae5dc"/><text x="34" y="74" fill="#bc5a40" font-size="16">Begin van voorover kantelen</text>`:''}`;
+    ${tipping?`<g id="tip-warning"><rect x="22" y="57" width="286" height="34" rx="5" fill="#fae5dc"/><text x="36" y="79" fill="#bc5a40" font-size="16">Begin van voorover kantelen</text></g>`:''}`;
   }
   function drawTopScene() {
     const r=result,s=state,S=155,ox=568,oy=253,xp=x=>ox+x*S,yp=y=>oy-y*S;
@@ -238,7 +247,7 @@
     $('statusBar').className='statusbar '+r.status;$('statusIcon').textContent=icon;$('statusTitle').textContent=title;$('statusText').textContent=text;
     $('marginMetric').textContent=fmt(r.margin*1000)+' mm';$('useMetric').textContent=fmt(r.utilization*100)+'%';$('heightMetric').textContent=fmt(r.z,2)+' m';$('capacityMetric').textContent=fmt(r.max)+' kg';
     $('sceneStatus').className='scenestatus '+r.status;$('sceneStatus').innerHTML=`<i></i><span>${r.status==='tip'?'Buiten de kantellijn':r.status==='capacity'?'Lastgrens overschreden':'Marge'} <b>${fmt(r.margin*1000)} mm</b></span>`;
-    $('sceneHint').textContent=activeExercise!==null?'Opdracht '+(activeExercise+1)+' · '+exercises[activeExercise].label.toLowerCase():r.status==='tip'?'Kantellijn overschreden · herstel de situatie':s.speed>0?'Bochteffect actief · bekijk ook het bovenaanzicht':s.brake>0?'Remmen actief · volg de paarse projectie':'Verander één factor en volg de stippen';
+    $('sceneHint').textContent=M.forwardTip(s,r).grounded?'De vork raakt de vloer; het kantelmoment blijft bestaan.':activeExercise!==null?'Opdracht '+(activeExercise+1)+' · '+exercises[activeExercise].label.toLowerCase():r.status==='tip'?'Kantellijn overschreden · herstel de situatie':s.speed>0?'Bochteffect actief · bekijk ook het bovenaanzicht':s.brake>0?'Remmen actief · volg de paarse projectie':'Verander één factor en volg de stippen';
     const slopeText=(s.slope>0?'+':'')+fmt(s.slope)+'° '+(s.slope>0?'neerwaarts':s.slope<0?'opwaarts':'vlak');
     $('viewCaption').textContent=(view==='side'?'Zijaanzicht · kantelen over de voorwielen':'Bovenaanzicht · steunvlak en zijwaartse balans')+(s.slope!==0?' · Langshelling '+slopeText+(view==='top'?' (zie zijaanzicht)':''):'');
     $('scene').setAttribute('aria-label',(view==='side'?'Heftruck en vloer in zijaanzicht':'Heftruck in bovenaanzicht')+' met langshelling '+slopeText);
@@ -276,12 +285,14 @@
   function startExercise(i) {
     if(exercises[i].type==='diagram'){activeExercise=null;feedback='';feedbackOK=false;render();showTab('practice');window.DiagramLab.start(i);return;}
     activeExercise=i;state={...exercises[i].setup};feedback='';feedbackOK=false;selectedFactor=null;
+    mobileKey=exercises[i].keys?.[0]||'weight';
     showTab('lab');showControls(i===2?'motion':'load');view=i===2||i===4?'top':'side';render();$('exerciseBanner').scrollIntoView({behavior:'auto',block:'start'});
   }
   function endExercise(){activeExercise=null;feedback='';feedbackOK=false;render();}
   function exploreFactor(key) {
     const f=factors.find(f=>f.key===key);if(!f)return;
     activeExercise=null;state={...f.setup};selectedFactor=key;feedback='';feedbackOK=false;
+    mobileKey=key;
     showTab('lab');showControls(['brake','speed','slope','offset'].includes(key)?'motion':'load');view=['speed','offset'].includes(key)?'top':'side';render();$('lab').scrollIntoView({behavior:'auto',block:'start'});$('range-'+key).focus({preventScroll:true});
   }
   function render(){result=M.compute(state);syncControls();drawScene();drawTriangle();drawChart();updateStatus();renderExercise();}
@@ -293,7 +304,7 @@
     if(b.dataset.tab)showTab(b.dataset.tab);
     if(b.dataset.goto){showTab(b.dataset.goto);document.querySelector('.tabs').scrollIntoView({behavior:'auto',block:'start'});}
     if(b.dataset.control)showControls(b.dataset.control);
-    if(b.dataset.preset){state={...presets[b.dataset.preset]};selectedFactor=b.dataset.preset==='long'?'center':b.dataset.preset==='high'?'height':b.dataset.preset==='turn'?'speed':null;view=b.dataset.preset==='turn'?'top':'side';feedback='';feedbackOK=false;showControls(b.dataset.preset==='turn'?'motion':'load');render();document.querySelectorAll('[data-preset]').forEach(btn=>btn.classList.toggle('active',btn===b));}
+    if(b.dataset.preset){state={...presets[b.dataset.preset]};selectedFactor=b.dataset.preset==='long'?'center':b.dataset.preset==='high'?'height':b.dataset.preset==='turn'?'speed':null;mobileKey=selectedFactor||'weight';view=b.dataset.preset==='turn'?'top':'side';feedback='';feedbackOK=false;showControls(b.dataset.preset==='turn'?'motion':'load');render();document.querySelectorAll('[data-preset]').forEach(btn=>btn.classList.toggle('active',btn===b));}
     if(b.dataset.factor)exploreFactor(b.dataset.factor);
     if(b.dataset.info){const key=b.dataset.info==='radius'?'speed':b.dataset.info;const f=factors.find(f=>f.key===key);selectedFactor=key;$('liveInsight').textContent=f.insight;$('liveInsight').scrollIntoView({behavior:'auto',block:'nearest'});}
     if(b.dataset.exercise!==undefined)startExercise(Number(b.dataset.exercise));
