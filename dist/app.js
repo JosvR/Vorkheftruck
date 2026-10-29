@@ -186,7 +186,7 @@
     ${planeBadge((xp(.35)+lx)/2,dimY+23,'LZP '+fmt(s.center)+' mm','#465f3c',190)}
     ${s.slope!==0?'<path id="horizontal-reference" d="M695 386H835" stroke="#7b8d70" stroke-width="1.5" stroke-dasharray="6 5"/><text x="835" y="375" text-anchor="end" font-size="14" fill="#536b47">0° horizontaal</text>':''}
     <text x="27" y="472" font-size="14" fill="#526b45">${s.slope!==0?'Langshelling '+slopeText:s.height>1800?'Aanzicht schaalt mee met de hefhoogte':'Modelheftruck · 3.200 kg'}</text>
-    ${tipping?`<g id="tip-warning"><rect x="22" y="57" width="286" height="34" rx="5" fill="#fae5dc"/><text x="36" y="79" fill="#bc5a40" font-size="16">Begin van voorover kantelen</text></g>`:''}`;
+    ${tipping?`<g id="tip-warning"><rect x="22" y="57" width="255" height="34" rx="5" fill="#fae5dc"/><text x="36" y="79" fill="#bc5a40" font-size="16">Begin van voorover kantelen</text></g>`:''}`;
   }
   function drawTopScene() {
     const r=result,s=state,S=155,ox=568,oy=253,xp=x=>ox+x*S,yp=y=>oy-y*S;
