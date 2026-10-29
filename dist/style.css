@@ -19,3 +19,7 @@
  .controlpanel .panelhead{padding:13px 16px 8px}.controlpanel .panelhead h3{font-size:21px}.controlpanel .panelhead p{display:none}.controlpanel .controltabs{display:none}.mobile-setting{display:grid;gap:5px;padding:0 16px;font-size:14px;font-weight:800}.mobile-setting select{display:block;width:100%;border:1px solid #b7c8a7;background:#f1f5e9;border-radius:7px;padding:7px 10px;font-size:18px;font-weight:800;min-height:44px}.controlset{padding:0 16px}.control:not(.mobile-active){display:none}.control{padding:13px 0}.controlhelp{margin-top:3px;font-size:15px}.controlhead label{font-size:17px}.controlpanel .presets{border-top:1px solid #e0e7d8;padding:16px}.scene-details .legend{font-size:14px;padding:17px}.scene-details{scroll-margin-top:285px}
 }
 @media(max-width:720px) and (max-height:500px){.visualpanel{position:static}}
+
+/* Hoogte en doorsnede van de didactische stabiliteitspiramide. */
+.scenestatus{position:static;max-width:none;justify-content:center;border:0;border-top:1px solid #d5e0ce;border-radius:0;padding:8px 12px;min-height:44px;font-size:16px}
+.slice{background:#267d9b}.height-note{padding:18px 24px;background:#edf5f7;border-top:1px solid #d2e3e8;color:#305763}.height-note b{display:block;font-size:19px}.height-note p{margin-top:6px;font-size:17px}.projection .height-note b{font-size:25px}.projection .height-note p{font-size:23px}@media(max-width:720px){.height-note{padding:17px}.height-note b{font-size:18px}.height-note p{font-size:16px}}

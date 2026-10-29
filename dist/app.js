@@ -4,7 +4,7 @@
   const M=window.BalansModel, $=id=>document.getElementById(id);
   const fmt=(n,d=0)=>new Intl.NumberFormat('nl-NL',{maximumFractionDigits:d,minimumFractionDigits:d}).format(n);
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-  const C={teal:'#248577',orange:'#e69043',purple:'#7962b8',red:'#c74738',ink:'#28473d',soft:'#9da98f'};
+  const C={teal:'#248577',orange:'#e69043',purple:'#7962b8',red:'#c74738',ink:'#28473d',soft:'#9da98f',slice:'#267d9b'};
   let state={...M.defaults}, result=M.compute(state), view='side', tab='lab', activeExercise=null, feedback='', feedbackOK=false, selectedFactor=null;
   let completed=[],mobileKey='weight';
   try { const saved=JSON.parse(localStorage.getItem('balanslab-progress-v1')||'[]'); if(Array.isArray(saved)) completed=[...new Set(saved.filter(x=>Number.isInteger(x)&&x>=0&&x<7))]; } catch(e) {}
@@ -22,7 +22,7 @@
   const factors=[
     {key:'weight',icon:'↓',title:'Lastgewicht',body:'Meer massa in de last trekt het gezamenlijke zwaartepunt naar voren. Het lastmoment neemt toe. Ook een compacte, zware last kan de balans verstoren.',try:'Vergroot de last van 1.000 naar 2.500 kg. Volg de groene stip en de marge.',setup:{...M.defaults},insight:'Meer lastgewicht trekt het gezamenlijke zwaartepunt naar de last. De kantellijn bij de voorwielen blijft op dezelfde plek.'},
     {key:'center',icon:'↔',title:'Lastafstand',body:'Het lastzwaartepunt ligt bij een gelijkmatig verdeelde last ongeveer in het midden. Een lange last of ruimte tussen last en vorkrug vergroot de hefboomarm. Het toegestane gewicht neemt af.',try:'Laat 1.500 kg gelijk en schuif de afstand van 500 naar 1.000 mm.',setup:{...M.defaults,weight:1500},insight:'De arm loopt vanaf de vooras tot het lastzwaartepunt. Een grotere lastafstand vergroot het kantelende moment, ook bij hetzelfde gewicht.'},
-    {key:'height',icon:'↟',title:'Hefhoogte',body:'Heffen brengt het gezamenlijke zwaartepunt omhoog. Op een vlakke vloer met verticale mast verandert daardoor het statische voorovermoment niet. Bij remmen en bochten neemt het kantelrisico wel toe.',try:'Vergelijk 200 en 4.000 mm. Voeg daarna 2 m/s² remvertraging toe.',setup:{...M.defaults,weight:1500},insight:'Een hoog zwaartepunt vergroot de verschuiving van de krachtprojectie bij remmen, bochten en een helling. Hoogte alleen verschuift het statische zwaartepunt niet naar voren.'},
+    {key:'height',icon:'↟',title:'Hefhoogte',body:'Heffen brengt het gezamenlijke zwaartepunt omhoog. In de stabiliteitspiramide wordt de doorsnede op die hoogte kleiner. De drie steunpunten op de vloer blijven gelijk. Een hoog zwaartepunt maakt de truck gevoeliger voor remmen, bochten en hellingen.',try:'Vergelijk 200 en 4.000 mm. Volg het blauwe vlak in beide aanzichten. Voeg daarna 2 m/s² remvertraging toe.',setup:{...M.defaults,weight:1500},insight:'Hoger heffen maakt het blauwe vlak in de lespiramide kleiner. De grijze basis blijft gelijk. Op een vlakke vloer met rechte mast verandert het statische voorovermoment niet; remmen, bochten en een helling hebben bij een hoog zwaartepunt wel meer invloed.'},
     {key:'tilt',icon:'∠',title:'Mastneiging',body:'Voorover neigen brengt de last naar voren en vergroot het lastmoment. Dit effect is sterker bij een hoog geheven last. Achterover neigen geeft geen toestemming om het fabrikantdiagram te overschrijden.',try:'Neig bij 3.500 mm hefhoogte voorzichtig van −6° naar +6°.',setup:{...M.defaults,weight:1500,height:3500},insight:'Bij een hoog geheven last verplaatst een kleine mastneiging het lastzwaartepunt al duidelijk naar voren. Let op de oranje stip en de langere arm.'},
     {key:'brake',icon:'⇥',title:'Remmen',body:'Bij remmen tijdens vooruitrijden wil de massa doorbewegen. De resulterende kracht grijpt verder naar voren op de grond aan. Het fysieke zwaartepunt springt daarbij niet ineens naar voren.',try:'Stel de last hoog in en verhoog de remvertraging. Vergelijk groen en paars.',setup:{...M.defaults,weight:1500,height:3500},insight:'Bij remmen verschuift vooral de paarse krachtprojectie naar voren. Het groene massazwaartepunt blijft bij dezelfde last en maststand op zijn plek.'},
     {key:'speed',icon:'↱',title:'Snelheid & bochtstraal',body:'In een bocht verplaatst de krachtprojectie naar de buitenzijde. Het effect groeit met het kwadraat van de snelheid: twee keer zo snel geeft vier keer de zijdelingse versnelling bij dezelfde straal.',try:'Vergelijk 5 en 10 km/u in dezelfde bocht. Maak daarna de bocht ruimer.',setup:{...M.defaults,weight:1200,height:3000,speed:5,radius:3},insight:'Snelheid werkt kwadratisch door in de bocht: a = v² / r. Een hoog zwaartepunt en een krappe bocht maken de zijwaartse marge kleiner.'},
@@ -101,11 +101,33 @@
   function wheel(x,r) {
     return `<g transform="translate(${x},${-r})"><circle r="${r}" fill="#25322d" stroke="#17251f" stroke-width=".025"/><circle r="${r*.83}" fill="url(#tyre)"/><circle r="${r*.56}" fill="#b0b6a7" stroke="#737e6f" stroke-width=".025"/><circle r="${r*.34}" fill="#7c897c"/><circle r="${r*.16}" fill="#3b5143"/>${Array.from({length:7},(_,i)=>{const a=i*Math.PI*2/7;return `<circle cx="${Math.cos(a)*r*.42}" cy="${Math.sin(a)*r*.42}" r=".018" fill="#455448"/>`;}).join('')}${Array.from({length:12},(_,i)=>{const a=i*30;return `<path d="M-.04 ${-r*.91}l.11 .035" stroke="#4b5547" stroke-width=".028" transform="rotate(${a})"/>`;}).join('')}</g>`;
   }
+  function pyramidInset(r) {
+    const section=M.stabilitySection(r.z),top={x:174,y:39};
+    const base=[{x:22,y:176},{x:174,y:153},{x:174,y:196}];
+    const slice=base.map(p=>({x:top.x+(p.x-top.x)*section.scale,y:top.y+(p.y-top.y)*section.scale}));
+    const polygon=points=>points.map(p=>p.x+','+p.y).join(' ');
+    return `<g id="stability-pyramid" transform="translate(648 83)" data-height="${r.z}" data-section-scale="${section.scale}">
+      <rect x="0" y="0" width="202" height="252" rx="9" fill="#ffffffed" stroke="#cddcdb"/>
+      <text x="101" y="24" text-anchor="middle" font-size="17" fill="${C.ink}">Stabiliteitspiramide</text>
+      <polygon points="${polygon([base[0],base[2],top])}" fill="#d9e6df" fill-opacity=".35"/>
+      ${base.map(p=>`<path d="M${p.x} ${p.y}L${top.x} ${top.y}" fill="none" stroke="#b87364" stroke-width="1.6"/>`).join('')}
+      <polygon class="pyramid-base" points="${polygon(base)}" fill="none" stroke="#8b9884" stroke-width="1.7" stroke-dasharray="5 4"/>
+      <polygon class="pyramid-slice" points="${polygon(slice)}" fill="${C.slice}" fill-opacity=".32" stroke="${C.slice}" stroke-width="2.7"/>
+      <text x="101" y="220" text-anchor="middle" fill="${C.slice}" font-size="16">Zwaartepunt: ${fmt(r.z,2)} m</text>
+      <text x="101" y="241" text-anchor="middle" fill="#52685c" font-size="14">Hoger = kleiner blauw vlak</text>
+    </g>`;
+  }
   function drawScene() {
     if(view==='top') return drawTopScene();
-    const r=result,s=state,fork=M.forkGeometry(s),pose=M.forwardTip(s,r),S=Math.min(124,310/(Math.max(2.45,fork.lift+1.13))),ox=440,gy=386;
+    const r=result,s=state,fork=M.forkGeometry(s),pose=M.forwardTip(s,r),ox=380,gy=386;
+    // Houd de volledige truck links van de aparte, schematische piramide.
+    const mastH=Math.max(2.45,fork.lift+1.03),a=s.tilt*Math.PI/180;
+    const local=(x,z)=>({x:.35+x*Math.cos(a)+z*Math.sin(a),z:.1+z*Math.cos(a)-x*Math.sin(a)});
+    const bounds=[...fork.points,local(0,fork.lift+.8),local(fork.depth+.06,fork.lift+.8),local(-.12,mastH),local(.18,mastH),{x:-2.14,z:.95},{x:-1.65,z:2.4},{x:-.2,z:2.4}].map(p=>{const t=M.floorToWorld(p.x,p.z-.32,pose.angle);return M.floorToWorld(t.x,t.z+.32,s.slope);});
+    const frontExtent=Math.max(...bounds.map(p=>p.x));
+    const S=Math.min(124,310/(Math.max(2.45,fork.lift+1.13)),250/Math.max(.1,frontExtent));
     const xp=x=>ox+x*S,yp=z=>gy-z*S;
-    const loadH=fork.lift,depth=fork.depth,mastH=Math.max(2.45,loadH+1.03);
+    const loadH=fork.lift,depth=fork.depth;
     const tip=pose.angle,tipping=pose.requested>0;
     const lx=xp(r.lx),ly=yp(r.lz),cx=xp(r.x),cy=yp(r.z),px=xp(r.px);
     const dimY=435;
@@ -123,7 +145,6 @@
       <marker id="dimArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5 0 10" fill="none" stroke="#9ca78c" stroke-width="1.3"/></marker>
     </defs>
     <rect width="860" height="490" fill="#f3f5ef"/><rect width="860" height="386" fill="url(#fineGrid)"/>
-    <path d="M690 105V386m110-281V386M690 150H800M690 225H800M690 300H800" fill="none" stroke="#e0e5d8" stroke-width="3"/><path d="M695 150l100 75m-100 0l100 75m-100 0l100 75" stroke="#e5e9df" stroke-width="1.2"/>
     <g id="inclined-world" transform="rotate(${s.slope} ${ox} ${gy})" data-slope="${s.slope}">
     <rect x="-200" y="386" width="1260" height="400" fill="#e9eee2"/><rect x="-200" y="386" width="1260" height="400" fill="url(#floor)"/><path id="floor-edge" d="M-200 386H1060" stroke="#879e73" stroke-width="2"/>
     <ellipse cx="${ox-25}" cy="393" rx="${2.9*S}" ry="10" fill="#607450" opacity=".09"/>
@@ -186,19 +207,25 @@
     ${planeBadge((xp(.35)+lx)/2,dimY+23,'LZP '+fmt(s.center)+' mm','#465f3c',190)}
     ${s.slope!==0?'<path id="horizontal-reference" d="M695 386H835" stroke="#7b8d70" stroke-width="1.5" stroke-dasharray="6 5"/><text x="835" y="375" text-anchor="end" font-size="14" fill="#536b47">0° horizontaal</text>':''}
     <text x="27" y="472" font-size="14" fill="#526b45">${s.slope!==0?'Langshelling '+slopeText:s.height>1800?'Aanzicht schaalt mee met de hefhoogte':'Modelheftruck · 3.200 kg'}</text>
+    ${pyramidInset(r)}
     ${tipping?`<g id="tip-warning"><rect x="22" y="57" width="255" height="34" rx="5" fill="#fae5dc"/><text x="36" y="79" fill="#bc5a40" font-size="16">Begin van voorover kantelen</text></g>`:''}`;
   }
   function drawTopScene() {
     const r=result,s=state,S=155,ox=568,oy=253,xp=x=>ox+x*S,yp=y=>oy-y*S;
     const ppx=xp(r.px),ppy=yp(r.py),cpx=xp(r.x),cpy=yp(r.y),rear=xp(-1.75),half=M.truck.track/2*S;
+    const section=M.stabilitySection(r.z),slice=section.vertices.map(p=>xp(p.x)+','+yp(p.y)).join(' ');
     $('scene').innerHTML=`<defs><pattern id="topGrid" width="35" height="35" patternUnits="userSpaceOnUse"><path d="M35 0H0V35" fill="none" stroke="#dce3d3" stroke-width=".6"/></pattern></defs><rect width="860" height="490" fill="#f3f5ef"/><rect width="860" height="490" fill="url(#topGrid)"/>
+    <text x="27" y="39" font-size="20" fill="${C.ink}">Hoger = minder stabiliteitsruimte</text>
+    <text x="27" y="68" font-size="17" fill="${C.slice}">Blauw: doorsnede op ${fmt(r.z,2)} m (lesmodel)</text>
+    <text x="27" y="96" font-size="16" fill="#63715f">Grijze stippellijn: vaste basis op de vloer</text>
     <text x="770" y="260" font-size="17" fill="#9aa88e">Vooruit →</text>
     <g opacity=".5"><rect x="${rear-60}" y="${oy-64}" width="299" height="128" rx="38" fill="#72846b"/><rect x="${rear-60}" y="${oy-61}" width="98" height="122" rx="26" fill="#385638"/><path d="M${rear+5} ${oy-60}h200v120h-200Z" fill="#d9b76f"/><rect x="${rear+26}" y="${oy-48}" width="140" height="96" rx="6" fill="#dfe8d8" stroke="#687e60" stroke-width="8"/>
     <rect x="${rear-16}" y="${oy-72}" width="36" height="19" rx="6" fill="#314b33"/><rect x="${rear-16}" y="${oy+53}" width="36" height="19" rx="6" fill="#314b33"/>
     <rect x="${ox-24}" y="${oy-half-14}" width="48" height="27" rx="5" fill="#314b33"/><rect x="${ox-24}" y="${oy+half-13}" width="48" height="27" rx="5" fill="#314b33"/>
     <path d="M${ox+20} ${oy-63}v126" stroke="#485e43" stroke-width="9"/>
     <rect x="${ox+51}" y="${oy-63-s.offset/1000*S}" width="${s.center/1000*2*S}" height="126" rx="3" fill="#d9b77b" stroke="#a0844f" stroke-width="2"/></g>
-    <path d="M${rear} ${oy}L${ox} ${oy-half}V${oy+half}Z" fill="#81ad7628" stroke="#7b9b6b" stroke-width="1.5"/>
+    <path id="top-ground-base" d="M${rear} ${oy}L${ox} ${oy-half}V${oy+half}Z" fill="#e3e9dd40" stroke="#7f8e78" stroke-width="2" stroke-dasharray="7 5"/>
+    <polygon id="top-height-section" points="${slice}" data-height="${r.z}" data-section-scale="${section.scale}" fill="${C.slice}" fill-opacity=".28" stroke="${C.slice}" stroke-width="2.5"/>
     <path d="M${ox} ${oy-half}V${oy+half}" stroke="${r.edge==='voor'&&r.status==='tip'?C.red:'#d4775d'}" stroke-width="3"/>
     ${r.edge==='zij'&&r.status==='tip'?`<path d="M${rear} ${oy}L${ox} ${r.py>0?oy-half:oy+half}" stroke="${C.red}" stroke-width="3"/>`:''}
     <path d="M${cpx} ${cpy}L${ppx} ${ppy}" stroke="${C.purple}" stroke-width="1.8" stroke-dasharray="4 4"/>
@@ -207,14 +234,18 @@
     <circle cx="${rear}" cy="${oy}" r="5" fill="#546d46" stroke="white" stroke-width="2"/><circle cx="${ox}" cy="${oy-half}" r="5" fill="#546d46" stroke="white" stroke-width="2"/><circle cx="${ox}" cy="${oy+half}" r="5" fill="#546d46" stroke="white" stroke-width="2"/>
     ${badge(rear,oy+65,'Draaipunt achteras','#69805b',115)}${badge(ox,oy+half+35,'Voorwielen / kantellijn',C.red,140)}
     ${badge(clamp(ppx,90,760),clamp(ppy-30,65,445),'Krachtprojectie',C.purple,110)}
-    <text x="27" y="445" font-size="16" fill="#8c9c7c">Groen = massazwaartepunt · Paars = effect van alle krachten op de grond</text><text x="27" y="465" font-size="14" fill="#a1ad94">De schuine randen zijn de kantellijnen voor zijwaarts kantelen.</text>`;
+    <text x="27" y="445" font-size="16" fill="#526b45">Groen en paars zijn projecties op de vloer.</text><text x="27" y="469" font-size="16" fill="${C.slice}">De blauwe driehoek toont apart de kleinere doorsnede op hoogte.</text>`;
   }
   function drawTriangle() {
     const r=result,xp=x=>275+x*120,yp=y=>120-y*120,back=xp(-1.75),t=M.truck.track/2*120;
     const x=xp(r.x),y=yp(r.y),px=xp(r.px),py=yp(r.py);
     const outside=px<12||px>333||py<18||py>219;
     const vx=clamp(px,14,335),vy=clamp(py,18,218);
-    $('triangle').innerHTML=`<path d="M${back} 120L275 ${120-t}V${120+t}Z" fill="#e8efdf" stroke="#91ac7b" stroke-width="1.5"/><path d="M${back} 120H286" stroke="#b4c4a5" stroke-dasharray="3 4"/><path d="M275 ${120-t}V${120+t}" stroke="#cc705a" stroke-width="2.5"/>
+    const section=M.stabilitySection(r.z),slice=section.vertices.map(p=>xp(p.x)+','+yp(p.y)).join(' ');
+    $('triangle').innerHTML=`<text x="175" y="25" text-anchor="middle" fill="${C.slice}" font-size="16">Blauw: doorsnede op ${fmt(r.z,2)} m</text>
+    <path id="mini-ground-base" d="M${back} 120L275 ${120-t}V${120+t}Z" fill="#f0f3eb" stroke="#85967a" stroke-width="1.7" stroke-dasharray="5 4"/>
+    <polygon id="mini-height-section" points="${slice}" data-section-scale="${section.scale}" fill="${C.slice}" fill-opacity=".25" stroke="${C.slice}" stroke-width="2"/>
+    <path d="M${back} 120H286" stroke="#b4c4a5" stroke-dasharray="3 4"/><path d="M275 ${120-t}V${120+t}" stroke="#cc705a" stroke-width="2.5"/>
     ${r.edge==='zij'&&r.status==='tip'?`<path d="M${back} 120L275 ${r.py>0?120-t:120+t}" stroke="${C.red}" stroke-width="3"/>`:''}
     <circle cx="${back}" cy="120" r="4" fill="#69815a" stroke="white" stroke-width="1.5"/><circle cx="275" cy="${120-t}" r="4" fill="#69815a" stroke="white" stroke-width="1.5"/><circle cx="275" cy="${120+t}" r="4" fill="#69815a" stroke="white" stroke-width="1.5"/>
     <path d="M${x} ${y}L${vx} ${vy}" stroke="${C.purple}" stroke-width="1.4" stroke-dasharray="3 3"/>
@@ -250,7 +281,8 @@
     $('sceneHint').textContent=M.forwardTip(s,r).grounded?'De vork raakt de vloer; het kantelmoment blijft bestaan.':activeExercise!==null?'Opdracht '+(activeExercise+1)+' · '+exercises[activeExercise].label.toLowerCase():r.status==='tip'?'Kantellijn overschreden · herstel de situatie':s.speed>0?'Bochteffect actief · bekijk ook het bovenaanzicht':s.brake>0?'Remmen actief · volg de paarse projectie':'Verander één factor en volg de stippen';
     const slopeText=(s.slope>0?'+':'')+fmt(s.slope)+'° '+(s.slope>0?'neerwaarts':s.slope<0?'opwaarts':'vlak');
     $('viewCaption').textContent=(view==='side'?'Zijaanzicht · kantelen over de voorwielen':'Bovenaanzicht · steunvlak en zijwaartse balans')+(s.slope!==0?' · Langshelling '+slopeText+(view==='top'?' (zie zijaanzicht)':''):'');
-    $('scene').setAttribute('aria-label',(view==='side'?'Heftruck en vloer in zijaanzicht':'Heftruck in bovenaanzicht')+' met langshelling '+slopeText);
+    $('scene').setAttribute('aria-label',(view==='side'?'Heftruck en vloer met stabiliteitspiramide in zijaanzicht':'Heftruck met vaste basis en kleinere blauwe doorsnede in bovenaanzicht')+' met langshelling '+slopeText+'. Doorsnede op gezamenlijke zwaartepunthoogte '+fmt(r.z,2)+' meter.');
+    $('triangle').setAttribute('aria-label','Vaste stabiliteitsdriehoek op de vloer en blauwe doorsnede van de lespiramide op '+fmt(r.z,2)+' meter hoogte.');
     $('sideView').classList.toggle('selected',view==='side');$('topView').classList.toggle('selected',view==='top');$('sideView').setAttribute('aria-pressed',String(view==='side'));$('topView').setAttribute('aria-pressed',String(view==='top'));
     const factor=factors.find(f=>f.key===selectedFactor);
     $('liveInsight').textContent=factor?factor.insight:s.speed>0?'In een bocht verschuift de krachtprojectie naar buiten. Open het bovenaanzicht en ontdek wat snelheid, bochtstraal en hefhoogte doen.':'Meer gewicht trekt het gezamenlijke zwaartepunt naar de last toe. De kantellijn bij de voorwielen blijft op dezelfde plek.';

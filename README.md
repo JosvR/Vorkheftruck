@@ -28,6 +28,14 @@ Op telefoons blijft de compacte figuur zichtbaar boven de bediening. Een keuzeli
 
 Het ongewijzigde logo van Deltalinqs Training & Services is afkomstig van de officiële website: https://www.deltalinqstraining.nl/templates/standaard/images/logo.png .
 
+## Stabiliteitspiramide
+
+Beide aanzichten tonen een blauwe doorsnede van een schematische stabiliteitspiramide op de hoogte van het gezamenlijke zwaartepunt. In het zijaanzicht beweegt het vlak omhoog en wordt het kleiner; het bovenaanzicht en de kleine driehoek tonen hetzelfde vlak van bovenaf. De grijze gestippelde basis tussen de drie steunpunten blijft onveranderd. Markeringen in het bovenaanzicht horen bij de vloerprojectie en worden niet getoetst aan het blauwe vlak.
+
+De tekening gebruikt een vaste top op 5,5 m boven het midden van de vooras, met lineaire doorsneden. Deze hoogte en verkleining zijn didactische tekenkeuzes, geen fabrikantgegevens, restcapaciteit, veiligheidspercentage of nieuwe kantelgrens. Ze veranderen de berekende momenten, krachtprojectie en marge op de vloer niet. De doorsnede volgt de gezamenlijke zwaartepunthoogte, inclusief de invloed van lastgewicht en mastneiging.
+
+Conceptbron: EPRI, *Material Handling Application Guide* (2012), §5.1.3, figuur 5-12, gedrukte pagina 5-10 (PDF-pagina 84): https://restservice.epri.com/publicdownload/000000000001025240/0/Product . De afbeeldingen zijn eigen SVG-tekeningen; het bronbeeld is niet gekopieerd.
+
 ## Lastdiagrammen
 
 Opdracht 6 gebruikt het door Jos aangeleverde Deltalinqs-trainingsdiagram, inclusief een vergrootbare originele afbeelding met typeplaat. De getekende 4.000 mm-lijn wordt bij een lastafstand van 1.000 mm afgelezen als ongeveer 1.500 kg (tolerantie 25 kg vanwege de grafische aflezing). Er wordt niet gesteld dat dit diagram bij de afgebeelde Yale-typeplaat hoort.

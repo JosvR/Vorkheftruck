@@ -37,6 +37,12 @@
     return 0.85-(h-3000)/1500*0.15;
   }
   function capacity(center,height) { return Math.min(truck.rated,truck.rated*0.85/(truck.overhang+center/1000)*heightFactor(height)); }
+  // Alleen een didactische doorsnede van een piramide; geen extra kantelgrens.
+  // De top op 5,5 m is een tekenkeuze, geen fabrikantgegeven of maximale hefhoogte.
+  function stabilitySection(z) {
+    const apexHeight=5.5,scale=Math.max(0,Math.min(1,1-z/apexHeight));
+    return {scale,apexHeight,z,vertices:[{x:-truck.wheelbase*scale,y:0},{x:0,y:-truck.track/2*scale},{x:0,y:truck.track/2*scale}]};
+  }
   function compute(s) {
     const a=rad(s.tilt), h=forkGeometry(s).lift+0.45, d=s.center/1000;
     const lx=truck.overhang+d*Math.cos(a)+h*Math.sin(a);
@@ -59,7 +65,7 @@
     const status=margin<=0?'tip':utilization>1.00001?'capacity':margin<0.12||utilization>=0.9?'near':'stable';
     return {lx,lz,x,y,z,px,py,mass,margin,front,edge,max,utilization,status,loadMoment:s.weight*9.81*lx,truckMoment:truck.mass*9.81*-truck.x,ax,ay};
   }
-  const api={truck,defaults,compute,capacity,heightFactor,floorToWorld,forkGeometry,forwardTip};
+  const api={truck,defaults,compute,capacity,heightFactor,floorToWorld,forkGeometry,forwardTip,stabilitySection};
   root.BalansModel=api;
   if(typeof module!=='undefined') module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
