@@ -26,7 +26,7 @@
     {key:'tilt',icon:'∠',title:'Mastneiging',body:'Voorover neigen brengt de last naar voren en vergroot het lastmoment. Dit effect is sterker bij een hoog geheven last. Achterover neigen geeft geen toestemming om het fabrikantdiagram te overschrijden.',try:'Neig bij 3.500 mm hefhoogte voorzichtig van −6° naar +6°.',setup:{...M.defaults,weight:1500,height:3500},insight:'Bij een hoog geheven last verplaatst een kleine mastneiging het lastzwaartepunt al duidelijk naar voren. Let op de oranje stip en de langere arm.'},
     {key:'brake',icon:'⇥',title:'Remmen',body:'Bij remmen tijdens vooruitrijden wil de massa doorbewegen. De resulterende kracht grijpt verder naar voren op de grond aan. Het fysieke zwaartepunt springt daarbij niet ineens naar voren.',try:'Stel de last hoog in en verhoog de remvertraging. Vergelijk groen en paars.',setup:{...M.defaults,weight:1500,height:3500},insight:'Bij remmen verschuift vooral de paarse krachtprojectie naar voren. Het groene massazwaartepunt blijft bij dezelfde last en maststand op zijn plek.'},
     {key:'speed',icon:'↱',title:'Snelheid & bochtstraal',body:'In een bocht verplaatst de krachtprojectie naar de buitenzijde. Het effect groeit met het kwadraat van de snelheid: twee keer zo snel geeft vier keer de zijdelingse versnelling bij dezelfde straal.',try:'Vergelijk 5 en 10 km/u in dezelfde bocht. Maak daarna de bocht ruimer.',setup:{...M.defaults,weight:1200,height:3000,speed:5,radius:3},insight:'Snelheid werkt kwadratisch door in de bocht: a = v² / r. Een hoog zwaartepunt en een krappe bocht maken de zijwaartse marge kleiner.'},
-    {key:'slope',icon:'╱',title:'Helling',body:'Op een helling wijst de zwaartekracht niet loodrecht op de vloer. De krachtprojectie verschuift ten opzichte van het steunvlak. Dit lab toont alleen een langshelling; een dwarshelling wordt niet berekend.',try:'Vergelijk een vlakke vloer en 6° neerwaarts, eerst met een lage en dan een hoge last.',setup:{...M.defaults,weight:1500,height:3000},insight:'Deze langshelling wordt in vloercoördinaten getoond. Neerwaarts met de last naar beneden verschuift de krachtprojectie richting de voorste kantellijn.'},
+    {key:'slope',icon:'╱',title:'Helling',body:'Op een helling wijst de zwaartekracht niet loodrecht op de vloer. De krachtprojectie verschuift ten opzichte van het steunvlak. Dit lab toont alleen een langshelling; een dwarshelling wordt niet berekend.',try:'Vergelijk een vlakke vloer en 6° neerwaarts, eerst met een lage en dan een hoge last.',setup:{...M.defaults,weight:1500,height:3000},insight:'De vloer en de heftruck hellen samen. De zwaartekracht blijft recht omlaag werken. Neerwaarts met de last naar beneden verschuift de krachtprojectie richting de voorste kantellijn.'},
     {key:'offset',icon:'⇄',title:'Lastverdeling',body:'Een last uit het midden trekt het gezamenlijke zwaartepunt zijwaarts. Naar de buitenkant van een bocht wordt de marge nog kleiner. Een onregelmatige last heeft niet altijd het zwaartepunt in het geometrische midden.',try:'Verplaats de last naar de buitenzijde van een bocht. Kijk naar de driehoek.',setup:{...M.defaults,weight:1500,height:2000,speed:6,radius:3},insight:'Een ongelijke lastverdeling verschuift het massazwaartepunt zijwaarts. Valt dit samen met de buitenzijde van de bocht, dan neemt de marge verder af.'}
   ];
   const exercises=[
@@ -99,7 +99,11 @@
     const loadH=s.height/1000-0.10,depth=s.center/1000*2,mastH=Math.max(2.45,loadH+1.03);
     const tip=r.status==='tip'&&r.edge==='voor'?Math.min(9,2+Math.abs(r.margin)*20):0;
     const lx=xp(r.lx),ly=yp(r.lz),cx=xp(r.x),cy=yp(r.z),px=xp(r.px);
-    const labelY=Math.max(94,cy-72), dimY=435;
+    const dimY=435;
+    const plane=(x,y)=>{const p=M.floorToWorld((x-ox)/S,(gy-y)/S,s.slope);return {x:ox+p.x*S,y:gy-p.z*S};};
+    const cgScreen=plane(cx,cy),labelY=Math.max(94,cgScreen.y-72),counterAnchor=plane(xp(-2.0),yp(.99));
+    const planeBadge=(x,y,text,color,width)=>{const p=plane(x,y);return badge(p.x,clamp(p.y,35,468),text,color,width);};
+    const slopeText=(s.slope>0?'+':'')+fmt(s.slope)+'° · '+(s.slope>0?'neerwaarts':s.slope<0?'opwaarts':'vlak');
     $('scene').innerHTML=`<defs>
       <linearGradient id="bodyGold" x1="0" y1="0" x2=".5" y2="1"><stop stop-color="#f4c56d"/><stop offset="1" stop-color="#d79a36"/></linearGradient>
       <linearGradient id="counter" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#627768"/><stop offset="1" stop-color="#344b3e"/></linearGradient>
@@ -111,7 +115,8 @@
     </defs>
     <rect width="860" height="490" fill="#f3f5ef"/><rect width="860" height="386" fill="url(#fineGrid)"/>
     <path d="M690 105V386m110-281V386M690 150H800M690 225H800M690 300H800" fill="none" stroke="#e0e5d8" stroke-width="3"/><path d="M695 150l100 75m-100 0l100 75m-100 0l100 75" stroke="#e5e9df" stroke-width="1.2"/>
-    <rect y="386" width="860" height="104" fill="#e9eee2"/><rect y="386" width="860" height="104" fill="url(#floor)"/><path d="M0 386H860" stroke="#afbca4" stroke-width="1.5"/>
+    <g id="inclined-world" transform="rotate(${s.slope} ${ox} ${gy})" data-slope="${s.slope}">
+    <rect x="-200" y="386" width="1260" height="400" fill="#e9eee2"/><rect x="-200" y="386" width="1260" height="400" fill="url(#floor)"/><path id="floor-edge" d="M-200 386H1060" stroke="#879e73" stroke-width="2"/>
     <ellipse cx="${ox-25}" cy="393" rx="${2.9*S}" ry="10" fill="#607450" opacity=".09"/>
     <g transform="rotate(${tip},${ox},${gy})"><g transform="translate(${ox} ${gy}) scale(${S})">
       <g id="truck-body" aria-label="Compacte heftruck met zichtbaar contragewicht en korte achteroverhang">
@@ -158,18 +163,20 @@
       </g>
     </g></g>
     <path d="M${lx} ${ly+9}V${gy}" stroke="${C.orange}" stroke-width="1" stroke-dasharray="3 4" opacity=".7"/>
-    <path d="M${cx} ${labelY+14}V${gy}" stroke="${C.teal}" stroke-width="1.4" class="cgline"/>
     ${cross(lx,ly,C.orange,5)}${cross(cx,cy,C.teal,7)}
-    ${badge(cx,labelY,'Gezamenlijk zwaartepunt',C.teal,235)}
-    <path d="M${xp(-2.0)} ${yp(.99)}L175 230H90" fill="none" stroke="#526b44" stroke-width="1.5"/>${badge(120,211,'Contragewicht','#425e35',180)}
-    ${Math.abs(r.px-r.x)>.008?`<path d="M${cx} ${cy}L${px} ${gy}" stroke="${C.purple}" stroke-width="1.5" stroke-dasharray="5 4"/>`:''}
+    <path id="force-line" d="M${cx} ${cy}L${px} ${gy}" stroke="${C.purple}" stroke-width="1.5" stroke-dasharray="5 4"/>
     <circle cx="${px}" cy="${gy}" r="7" fill="${C.purple}" stroke="white" stroke-width="2"/>
     <path d="M${ox} ${gy-18}V${gy+24}" stroke="${C.red}" stroke-width="2"/>
     <path d="M${ox-5} ${gy+24}l5-8 5 8Z" fill="${C.red}"/>
-    ${badge(ox-115,gy+32,'Vaste kantellijn',C.red,190)}
     <path d="M${xp(.35)} ${dimY-13}V${dimY+7}M${lx} ${dimY-13}V${dimY+7}M${xp(.35)+3} ${dimY}H${lx-3}" stroke="#a7b297" stroke-width="1" marker-start="url(#dimArrow)" marker-end="url(#dimArrow)"/>
-    ${badge((xp(.35)+lx)/2,dimY+23,'LZP '+fmt(s.center)+' mm','#465f3c',190)}
-    <text x="27" y="472" font-size="14" fill="#9ba78c">${s.height>1800?'Aanzicht schaalt mee met de hefhoogte':'Modelheftruck · 3.200 kg'}${s.slope!==0?' · langshelling '+fmt(s.slope)+'° (vloercoördinaten)':''}</text>
+    </g>
+    <path d="M${cgScreen.x} ${labelY+17}V${cgScreen.y-10}" stroke="${C.teal}" stroke-width="1.4" class="cgline"/>
+    ${badge(cgScreen.x,labelY,'Gezamenlijk zwaartepunt',C.teal,235)}
+    <path d="M${counterAnchor.x} ${counterAnchor.y}L175 230H90" fill="none" stroke="#526b44" stroke-width="1.5"/>${badge(120,211,'Contragewicht','#425e35',180)}
+    ${planeBadge(ox-115,gy+32,'Vaste kantellijn',C.red,190)}
+    ${planeBadge((xp(.35)+lx)/2,dimY+23,'LZP '+fmt(s.center)+' mm','#465f3c',190)}
+    ${s.slope!==0?'<path id="horizontal-reference" d="M695 386H835" stroke="#7b8d70" stroke-width="1.5" stroke-dasharray="6 5"/><text x="835" y="375" text-anchor="end" font-size="14" fill="#536b47">0° horizontaal</text>':''}
+    <text x="27" y="472" font-size="14" fill="#526b45">${s.slope!==0?'Langshelling '+slopeText:s.height>1800?'Aanzicht schaalt mee met de hefhoogte':'Modelheftruck · 3.200 kg'}</text>
     ${tip?`<rect x="22" y="57" width="165" height="25" rx="5" fill="#fae5dc"/><text x="34" y="74" fill="#bc5a40" font-size="16">Begin van voorover kantelen</text>`:''}`;
   }
   function drawTopScene() {
@@ -232,7 +239,9 @@
     $('marginMetric').textContent=fmt(r.margin*1000)+' mm';$('useMetric').textContent=fmt(r.utilization*100)+'%';$('heightMetric').textContent=fmt(r.z,2)+' m';$('capacityMetric').textContent=fmt(r.max)+' kg';
     $('sceneStatus').className='scenestatus '+r.status;$('sceneStatus').innerHTML=`<i></i><span>${r.status==='tip'?'Buiten de kantellijn':r.status==='capacity'?'Lastgrens overschreden':'Marge'} <b>${fmt(r.margin*1000)} mm</b></span>`;
     $('sceneHint').textContent=activeExercise!==null?'Opdracht '+(activeExercise+1)+' · '+exercises[activeExercise].label.toLowerCase():r.status==='tip'?'Kantellijn overschreden · herstel de situatie':s.speed>0?'Bochteffect actief · bekijk ook het bovenaanzicht':s.brake>0?'Remmen actief · volg de paarse projectie':'Verander één factor en volg de stippen';
-    $('viewCaption').textContent=view==='side'?'Zijaanzicht · kantelen over de voorwielen':'Bovenaanzicht · steunvlak en zijwaartse balans';
+    const slopeText=(s.slope>0?'+':'')+fmt(s.slope)+'° '+(s.slope>0?'neerwaarts':s.slope<0?'opwaarts':'vlak');
+    $('viewCaption').textContent=(view==='side'?'Zijaanzicht · kantelen over de voorwielen':'Bovenaanzicht · steunvlak en zijwaartse balans')+(s.slope!==0?' · Langshelling '+slopeText+(view==='top'?' (zie zijaanzicht)':''):'');
+    $('scene').setAttribute('aria-label',(view==='side'?'Heftruck en vloer in zijaanzicht':'Heftruck in bovenaanzicht')+' met langshelling '+slopeText);
     $('sideView').classList.toggle('selected',view==='side');$('topView').classList.toggle('selected',view==='top');$('sideView').setAttribute('aria-pressed',String(view==='side'));$('topView').setAttribute('aria-pressed',String(view==='top'));
     const factor=factors.find(f=>f.key===selectedFactor);
     $('liveInsight').textContent=factor?factor.insight:s.speed>0?'In een bocht verschuift de krachtprojectie naar buiten. Open het bovenaanzicht en ontdek wat snelheid, bochtstraal en hefhoogte doen.':'Meer gewicht trekt het gezamenlijke zwaartepunt naar de last toe. De kantellijn bij de voorwielen blijft op dezelfde plek.';

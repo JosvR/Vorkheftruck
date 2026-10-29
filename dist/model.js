@@ -4,6 +4,11 @@
   const truck = Object.freeze({mass:3200, x:-0.65, z:0.65, wheelbase:1.75, track:1.10, overhang:0.35, rated:2000});
   const defaults = Object.freeze({weight:1000, center:500, height:200, tilt:0, brake:0, speed:0, radius:3, slope:0, offset:0});
   const rad = n => n*Math.PI/180;
+  // Van vloercoördinaten naar de horizontale wereld: positief = lastzijde omlaag.
+  function floorToWorld(x,z,slope) {
+    const a=rad(slope),c=Math.cos(a),s=Math.sin(a);
+    return {x:x*c+z*s,z:-x*s+z*c};
+  }
   function heightFactor(h) {
     if(h<=1500) return 1;
     if(h<=3000) return 1-(h-1500)/1500*0.15;
@@ -32,7 +37,7 @@
     const status=margin<=0?'tip':utilization>1.00001?'capacity':margin<0.12||utilization>=0.9?'near':'stable';
     return {lx,lz,x,y,z,px,py,mass,margin,front,edge,max,utilization,status,loadMoment:s.weight*9.81*lx,truckMoment:truck.mass*9.81*-truck.x,ax,ay};
   }
-  const api={truck,defaults,compute,capacity,heightFactor};
+  const api={truck,defaults,compute,capacity,heightFactor,floorToWorld};
   root.BalansModel=api;
   if(typeof module!=='undefined') module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

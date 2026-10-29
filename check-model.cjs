@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {compute,defaults,capacity}=require('./dist/model.js');
+const {compute,defaults,capacity,floorToWorld}=require('./dist/model.js');
 const base=compute(defaults), heavy=compute({...defaults,weight:2000}), long=compute({...defaults,center:1000});
 assert.equal(base.status,'stable');
 assert(heavy.x>base.x,'Meer massa verplaatst het zwaartepunt naar de last');
@@ -16,6 +16,14 @@ assert(Math.abs(v10.ay/v5.ay-4)<1e-12,'Bochtversnelling is kwadratisch in snelhe
 assert.equal(compute({...defaults,brake:3}).x,base.x,'Remmen verandert de massapositie niet');
 assert(compute({...defaults,slope:6}).px>base.px);
 assert(compute({...defaults,offset:300}).y>base.y);
+// Op een helling valt de statische krachtprojectie in de wereld recht onder het zwaartepunt.
+for(const slope of [-8,-2,0,2,8]) {
+ const r=compute({...defaults,slope});
+ const cg=floorToWorld(r.x,r.z,slope),p=floorToWorld(r.px,0,slope);
+ assert(Math.abs(cg.x-p.x)<1e-12,'De werklijn van de zwaartekracht blijft verticaal');
+ const rear=floorToWorld(-1.75,0,slope),front=floorToWorld(0,0,slope);
+ assert(Math.abs((front.z-rear.z)/(front.x-rear.x)+Math.tan(slope*Math.PI/180))<1e-12,'De wielcontacten volgen dezelfde vloerhelling');
+}
 assert.equal(capacity(500,200),2000);
 assert.equal(capacity(500,4500),1400);
 assert.equal(compute({...defaults,weight:1500,height:4000,brake:3}).status,'tip');
