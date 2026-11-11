@@ -4,6 +4,7 @@
   const M=window.BalansModel, $=id=>document.getElementById(id);
   const fmt=(n,d=0)=>new Intl.NumberFormat('nl-NL',{maximumFractionDigits:d,minimumFractionDigits:d}).format(n);
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+  const tipLabel=r=>r.margin>=-1e-9?'Op de kantellijn':'Buiten de kantellijn';
   const C={teal:'#248577',orange:'#e69043',purple:'#7962b8',red:'#c74738',ink:'#28473d',soft:'#9da98f',slice:'#267d9b'};
   let state={...M.defaults}, result=M.compute(state), view='side', tab='lab', activeExercise=null, feedback='', feedbackOK=false, selectedFactor=null;
   let completed=[],mobileKey='weight';
@@ -114,7 +115,7 @@
     const separate=Math.hypot(r.px-r.x,r.py-r.y)>1e-9;
     const color=r.status==='tip'?C.red:separate?C.purple:C.teal;
     const markerTitle=separate?'Krachtprojectie in de doorsnede':'Gezamenlijk zwaartepunt';
-    const position=r.margin< -1e-9?'Buiten de kantellijn':r.margin<=1e-9?'Op de kantellijn':'Binnen de driehoek';
+    const position=r.status==='tip'?tipLabel(r):'Binnen de driehoek';
     const polygon=points=>points.map(p=>p.x+','+p.y).join(' ');
     return `<g id="stability-pyramid" transform="translate(648 83)" data-height="${r.z}" data-section-scale="${section.scale}">
       <rect x="0" y="0" width="202" height="252" rx="9" fill="#ffffffed" stroke="#cddcdb"/>
@@ -131,7 +132,7 @@
         <path d="M0 0V-8A8 8 0 0 0-8 0ZM0 0V8A8 8 0 0 0 8 0Z" fill="${color}"/>
         <circle r="8" fill="none" stroke="${color}" stroke-width="1.6"/>
       </g>
-      <text x="101" y="219" text-anchor="middle" fill="${C.slice}" font-size="15">Zwaartepunthoogte · ${fmt(r.z,2)} m</text>
+      <text x="101" y="219" text-anchor="middle" fill="${C.slice}" font-size="15">Zwaartepunt op ${fmt(r.z,2)} m</text>
       <text x="101" y="241" text-anchor="middle" fill="${color}" font-size="15">${position}</text>
     </g>`;
   }
@@ -286,17 +287,18 @@
   }
   function updateStatus() {
     const r=result,s=state;
+    const atEdge=r.margin>=-1e-9;
     const statuses={
       stable:['✓','Binnen het oefengebied','De krachtprojectie ligt binnen de driehoek en de last binnen het fictieve diagram.'],
       near:['!','De marge wordt klein','Je nadert een kantellijn of de fictieve lastgrens. Onderzoek welke factor invloed heeft.'],
       capacity:['!','Buiten het fictieve lastdiagram','De last overschrijdt de voorbeeldgrens, ook als de heftruck in het model nog niet kantelt.'],
-      tip:['!','Kantellijn overschreden',r.edge==='voor'?'De krachtprojectie ligt voorbij de voorwielen: er ontstaat een voorover kantelmoment.':'De krachtprojectie ligt buiten een zijrand: er ontstaat een zijwaarts kantelmoment.']
+      tip:['!',atEdge?'Kantellijn bereikt':'Kantellijn overschreden',atEdge?'De krachtprojectie ligt op een rand van de stabiliteitsdriehoek.':r.edge==='voor'?'De krachtprojectie ligt voorbij de voorwielen: er ontstaat een voorover kantelmoment.':'De krachtprojectie ligt buiten een zijrand: er ontstaat een zijwaarts kantelmoment.']
     };
     const [icon,title,text]=statuses[r.status];
     $('statusBar').className='statusbar '+r.status;$('statusIcon').textContent=icon;$('statusTitle').textContent=title;$('statusText').textContent=text;
     $('marginMetric').textContent=fmt(r.margin*1000)+' mm';$('useMetric').textContent=fmt(r.utilization*100)+'%';$('heightMetric').textContent=fmt(r.z,2)+' m';$('capacityMetric').textContent=fmt(r.max)+' kg';
-    $('sceneStatus').className='scenestatus '+r.status;$('sceneStatus').innerHTML=`<i></i><span>${r.status==='tip'?'Buiten de kantellijn':r.status==='capacity'?'Lastgrens overschreden':'Marge'} <b>${fmt(r.margin*1000)} mm</b></span>`;
-    $('sceneHint').textContent=M.forwardTip(s,r).grounded?'De vork raakt de vloer; het kantelmoment blijft bestaan.':activeExercise!==null?'Opdracht '+(activeExercise+1)+' · '+exercises[activeExercise].label.toLowerCase():r.status==='tip'?'Kantellijn overschreden · herstel de situatie':s.speed>0?'Bochteffect actief · bekijk ook het bovenaanzicht':s.brake>0?'Remmen actief · volg de paarse projectie':'Verander één factor en volg de stippen';
+    $('sceneStatus').className='scenestatus '+r.status;$('sceneStatus').innerHTML=`<i></i><span>${r.status==='tip'?tipLabel(r):r.status==='capacity'?'Lastgrens overschreden':'Marge'} <b>${fmt(r.margin*1000)} mm</b></span>`;
+    $('sceneHint').textContent=M.forwardTip(s,r).grounded?'De vork raakt de vloer; het kantelmoment blijft bestaan.':activeExercise!==null?'Opdracht '+(activeExercise+1)+' · '+exercises[activeExercise].label.toLowerCase():r.status==='tip'?tipLabel(r)+' · herstel de situatie':s.speed>0?'Bochteffect actief · bekijk ook het bovenaanzicht':s.brake>0?'Remmen actief · volg de paarse projectie':'Verander één factor en volg de stippen';
     const slopeText=(s.slope>0?'+':'')+fmt(s.slope)+'° '+(s.slope>0?'neerwaarts':s.slope<0?'opwaarts':'vlak');
     $('viewCaption').textContent=(view==='side'?'Zijaanzicht · kantelen over de voorwielen':'Bovenaanzicht · steunvlak en zijwaartse balans')+(s.slope!==0?' · Langshelling '+slopeText+(view==='top'?' (zie zijaanzicht)':''):'');
     const pyramidMarker=$('scene').querySelector('.pyramid-marker title');
