@@ -43,6 +43,11 @@
     const apexHeight=5.5,scale=Math.max(0,Math.min(1,1-z/apexHeight));
     return {scale,apexHeight,z,vertices:[{x:-truck.wheelbase*scale,y:0},{x:0,y:-truck.track/2*scale},{x:0,y:truck.track/2*scale}]};
   }
+  // Verklein punt en steunvlak vanuit dezelfde top. Zo blijft de positie
+  // ten opzichte van de randen gelijk in de schematische doorsnede.
+  function stabilitySectionPoint(section,x,y) {
+    return {x:x*section.scale,y:y*section.scale};
+  }
   function compute(s) {
     const a=rad(s.tilt), h=forkGeometry(s).lift+0.45, d=s.center/1000;
     const lx=truck.overhang+d*Math.cos(a)+h*Math.sin(a);
@@ -65,7 +70,7 @@
     const status=margin<=0?'tip':utilization>1.00001?'capacity':margin<0.12||utilization>=0.9?'near':'stable';
     return {lx,lz,x,y,z,px,py,mass,margin,front,edge,max,utilization,status,loadMoment:s.weight*9.81*lx,truckMoment:truck.mass*9.81*-truck.x,ax,ay};
   }
-  const api={truck,defaults,compute,capacity,heightFactor,floorToWorld,forkGeometry,forwardTip,stabilitySection};
+  const api={truck,defaults,compute,capacity,heightFactor,floorToWorld,forkGeometry,forwardTip,stabilitySection,stabilitySectionPoint};
   root.BalansModel=api;
   if(typeof module!=='undefined') module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

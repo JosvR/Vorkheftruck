@@ -23,3 +23,8 @@
 /* Hoogte en doorsnede van de didactische stabiliteitspiramide. */
 .scenestatus{position:static;max-width:none;justify-content:center;border:0;border-top:1px solid #d5e0ce;border-radius:0;padding:8px 12px;min-height:44px;font-size:16px}
 .slice{background:#267d9b}.height-note{padding:18px 24px;background:#edf5f7;border-top:1px solid #d2e3e8;color:#305763}.height-note b{display:block;font-size:19px}.height-note p{margin-top:6px;font-size:17px}.projection .height-note b{font-size:25px}.projection .height-note p{font-size:23px}@media(max-width:720px){.height-note{padding:17px}.height-note b{font-size:18px}.height-note p{font-size:16px}}
+
+.app-version{position:fixed;z-index:6;top:4px;right:10px;padding:0 4px;border-radius:3px;background:#fafbf5;color:#46614b;font-size:11px;line-height:1.4;font-variant-numeric:tabular-nums;white-space:nowrap}
+dialog{padding-top:34px}
+dialog .app-version{position:absolute;top:9px;right:14px}
+@media(max-width:720px){.visualpanel{top:22px}}

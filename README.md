@@ -32,6 +32,8 @@ Het ongewijzigde logo van Deltalinqs Training & Services is afkomstig van de off
 
 Beide aanzichten tonen een blauwe doorsnede van een schematische stabiliteitspiramide op de hoogte van het gezamenlijke zwaartepunt. In het zijaanzicht beweegt het vlak omhoog en wordt het kleiner; het bovenaanzicht en de kleine driehoek tonen hetzelfde vlak van bovenaf. De grijze gestippelde basis tussen de drie steunpunten blijft onveranderd. Markeringen in het bovenaanzicht horen bij de vloerprojectie en worden niet getoetst aan het blauwe vlak.
 
+Het punt in de piramide beweegt mee met het blauwe vlak. De posities van het gezamenlijke zwaartepunt en de krachtprojectie worden op dezelfde schaal als de doorsnede getekend. Als remmen, bochten of een helling de krachtprojectie verschuiven, blijven het groene zwaartepunt en de krachtprojectie afzonderlijk zichtbaar. Op de kantellijn wordt het punt rood; bij overschrijding ligt het buiten het blauwe vlak.
+
 De tekening gebruikt een vaste top op 5,5 m boven het midden van de vooras, met lineaire doorsneden. Deze hoogte en verkleining zijn didactische tekenkeuzes, geen fabrikantgegevens, restcapaciteit, veiligheidspercentage of nieuwe kantelgrens. Ze veranderen de berekende momenten, krachtprojectie en marge op de vloer niet. De doorsnede volgt de gezamenlijke zwaartepunthoogte, inclusief de invloed van lastgewicht en mastneiging.
 
 Conceptbron: EPRI, *Material Handling Application Guide* (2012), §5.1.3, figuur 5-12, gedrukte pagina 5-10 (PDF-pagina 84): https://restservice.epri.com/publicdownload/000000000001025240/0/Product . De afbeeldingen zijn eigen SVG-tekeningen; het bronbeeld is niet gekopieerd.

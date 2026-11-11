@@ -102,9 +102,19 @@
     return `<g transform="translate(${x},${-r})"><circle r="${r}" fill="#25322d" stroke="#17251f" stroke-width=".025"/><circle r="${r*.83}" fill="url(#tyre)"/><circle r="${r*.56}" fill="#b0b6a7" stroke="#737e6f" stroke-width=".025"/><circle r="${r*.34}" fill="#7c897c"/><circle r="${r*.16}" fill="#3b5143"/>${Array.from({length:7},(_,i)=>{const a=i*Math.PI*2/7;return `<circle cx="${Math.cos(a)*r*.42}" cy="${Math.sin(a)*r*.42}" r=".018" fill="#455448"/>`;}).join('')}${Array.from({length:12},(_,i)=>{const a=i*30;return `<path d="M-.04 ${-r*.91}l.11 .035" stroke="#4b5547" stroke-width=".028" transform="rotate(${a})"/>`;}).join('')}</g>`;
   }
   function pyramidInset(r) {
-    const section=M.stabilitySection(r.z),top={x:174,y:39};
-    const base=[{x:22,y:176},{x:174,y:153},{x:174,y:196}];
-    const slice=base.map(p=>({x:top.x+(p.x-top.x)*section.scale,y:top.y+(p.y-top.y)*section.scale}));
+    const section=M.stabilitySection(r.z),top={x:125,y:43};
+    const project=(point,scale)=>({
+      x:top.x+point.x*61,
+      y:top.y+(175-top.y)*scale-point.x*.85-point.y*39
+    });
+    const base=M.stabilitySection(0).vertices.map(p=>project(p,1));
+    const slice=section.vertices.map(p=>project(p,section.scale));
+    const cg=project(M.stabilitySectionPoint(section,r.x,r.y),section.scale);
+    const force=project(M.stabilitySectionPoint(section,r.px,r.py),section.scale);
+    const separate=Math.hypot(r.px-r.x,r.py-r.y)>1e-9;
+    const color=r.status==='tip'?C.red:separate?C.purple:C.teal;
+    const markerTitle=separate?'Krachtprojectie in de doorsnede':'Gezamenlijk zwaartepunt';
+    const position=r.margin< -1e-9?'Buiten de kantellijn':r.margin<=1e-9?'Op de kantellijn':'Binnen de driehoek';
     const polygon=points=>points.map(p=>p.x+','+p.y).join(' ');
     return `<g id="stability-pyramid" transform="translate(648 83)" data-height="${r.z}" data-section-scale="${section.scale}">
       <rect x="0" y="0" width="202" height="252" rx="9" fill="#ffffffed" stroke="#cddcdb"/>
@@ -113,8 +123,16 @@
       ${base.map(p=>`<path d="M${p.x} ${p.y}L${top.x} ${top.y}" fill="none" stroke="#b87364" stroke-width="1.6"/>`).join('')}
       <polygon class="pyramid-base" points="${polygon(base)}" fill="none" stroke="#8b9884" stroke-width="1.7" stroke-dasharray="5 4"/>
       <polygon class="pyramid-slice" points="${polygon(slice)}" fill="${C.slice}" fill-opacity=".32" stroke="${C.slice}" stroke-width="2.7"/>
-      <text x="101" y="220" text-anchor="middle" fill="${C.slice}" font-size="16">Zwaartepunt: ${fmt(r.z,2)} m</text>
-      <text x="101" y="241" text-anchor="middle" fill="#52685c" font-size="14">Hoger = kleiner blauw vlak</text>
+      ${separate?`<path d="M${cg.x} ${cg.y}L${force.x} ${force.y}" stroke="${color}" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <circle class="pyramid-cg" cx="${cg.x}" cy="${cg.y}" r="5.5" fill="${C.teal}" stroke="white" stroke-width="1.8"><title>Gezamenlijk zwaartepunt</title></circle>`:''}
+      <g class="pyramid-marker" transform="translate(${force.x} ${force.y})" data-position="${position}">
+        <title>${markerTitle} · ${position}</title>
+        <circle r="9" fill="white"/>
+        <path d="M0 0V-8A8 8 0 0 0-8 0ZM0 0V8A8 8 0 0 0 8 0Z" fill="${color}"/>
+        <circle r="8" fill="none" stroke="${color}" stroke-width="1.6"/>
+      </g>
+      <text x="101" y="219" text-anchor="middle" fill="${C.slice}" font-size="15">Zwaartepunthoogte · ${fmt(r.z,2)} m</text>
+      <text x="101" y="241" text-anchor="middle" fill="${color}" font-size="15">${position}</text>
     </g>`;
   }
   function drawScene() {
@@ -281,7 +299,8 @@
     $('sceneHint').textContent=M.forwardTip(s,r).grounded?'De vork raakt de vloer; het kantelmoment blijft bestaan.':activeExercise!==null?'Opdracht '+(activeExercise+1)+' · '+exercises[activeExercise].label.toLowerCase():r.status==='tip'?'Kantellijn overschreden · herstel de situatie':s.speed>0?'Bochteffect actief · bekijk ook het bovenaanzicht':s.brake>0?'Remmen actief · volg de paarse projectie':'Verander één factor en volg de stippen';
     const slopeText=(s.slope>0?'+':'')+fmt(s.slope)+'° '+(s.slope>0?'neerwaarts':s.slope<0?'opwaarts':'vlak');
     $('viewCaption').textContent=(view==='side'?'Zijaanzicht · kantelen over de voorwielen':'Bovenaanzicht · steunvlak en zijwaartse balans')+(s.slope!==0?' · Langshelling '+slopeText+(view==='top'?' (zie zijaanzicht)':''):'');
-    $('scene').setAttribute('aria-label',(view==='side'?'Heftruck en vloer met stabiliteitspiramide in zijaanzicht':'Heftruck met vaste basis en kleinere blauwe doorsnede in bovenaanzicht')+' met langshelling '+slopeText+'. Doorsnede op gezamenlijke zwaartepunthoogte '+fmt(r.z,2)+' meter.');
+    const pyramidMarker=$('scene').querySelector('.pyramid-marker title');
+    $('scene').setAttribute('aria-label',(view==='side'?'Heftruck en vloer met stabiliteitspiramide in zijaanzicht':'Heftruck met vaste basis en kleinere blauwe doorsnede in bovenaanzicht')+' met langshelling '+slopeText+'. Doorsnede op gezamenlijke zwaartepunthoogte '+fmt(r.z,2)+' meter.'+(pyramidMarker?' '+pyramidMarker.textContent+'.':''));
     $('triangle').setAttribute('aria-label','Vaste stabiliteitsdriehoek op de vloer en blauwe doorsnede van de lespiramide op '+fmt(r.z,2)+' meter hoogte.');
     $('sideView').classList.toggle('selected',view==='side');$('topView').classList.toggle('selected',view==='top');$('sideView').setAttribute('aria-pressed',String(view==='side'));$('topView').setAttribute('aria-pressed',String(view==='top'));
     const factor=factors.find(f=>f.key===selectedFactor);
@@ -345,6 +364,11 @@
   $('modelInfo').onclick=$('sources').onclick=()=>$('infoDialog').showModal();$('closeDialog').onclick=()=>$('infoDialog').close();
   $('infoDialog').addEventListener('click',e=>{if(e.target===$('infoDialog')){const box=$('infoDialog').getBoundingClientRect();if(e.clientX<box.left||e.clientX>box.right||e.clientY<box.top||e.clientY>box.bottom)$('infoDialog').close();}});
   $('clearProgress').onclick=()=>{completed=[];saveProgress();renderPractice();};
+  document.querySelectorAll('dialog').forEach(dialog=>{
+    const version=$('appVersion').cloneNode(true);
+    version.removeAttribute('id');
+    dialog.prepend(version);
+  });
   window.completeDiagramExercise=i=>{if((i===5||i===6)&&!completed.includes(i)){completed.push(i);saveProgress();}};
   window.returnToPractice=()=>{showTab('practice');$('practice').scrollIntoView({block:'start'});};
   document.querySelectorAll('.brand,.footerbrand').forEach(a=>a.onclick=e=>{e.preventDefault();showTab('lab');window.scrollTo({top:0,behavior:'auto'});});
